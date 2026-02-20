@@ -276,3 +276,78 @@ class LongHaulMultiDayTest(TestCase):
                 total, 1440,
                 f"Sheet {sheet.date} totals {total} min, expected 1440",
             )
+
+
+class IncompleteTripTest(TestCase):
+    """When cycle hours are nearly exhausted, the trip should be marked incomplete."""
+
+    def test_high_cycle_marks_trip_incomplete(self):
+        result = compute_plan(
+            total_miles=1793,
+            total_drive_minutes=41 * 60 + 52,  # ~41h 52m
+            cycle_used_hours=69,  # only 1h remaining in 70/8
+            start_date=date(2025, 1, 1),
+        )
+        self.assertFalse(result["trip_completed"])
+        self.assertGreater(result["remaining_drive_minutes"], 0)
+
+    def test_remaining_drive_minutes_accurate(self):
+        result = compute_plan(
+            total_miles=1793,
+            total_drive_minutes=41 * 60 + 52,
+            cycle_used_hours=69,
+            start_date=date(2025, 1, 1),
+        )
+        actual_driven = sum(
+            e.end - e.start for e in result["timeline"] if e.status == Status.DRIVING
+        )
+        expected_remaining = (41 * 60 + 52) - actual_driven
+        self.assertEqual(result["remaining_drive_minutes"], expected_remaining)
+
+
+class FuelStopPlanningTest(TestCase):
+    """Fuel stop count should reflect the full route, not just the driven portion."""
+
+    def test_planned_fuel_stops_on_incomplete_trip(self):
+        """1,793 miles / 1,000 = at least 1 planned fuel stop even if barely driven."""
+        result = compute_plan(
+            total_miles=1793,
+            total_drive_minutes=41 * 60 + 52,
+            cycle_used_hours=69,
+            start_date=date(2025, 1, 1),
+        )
+        self.assertGreaterEqual(result["planned_fuel_stops"], 1)
+
+    def test_planned_fuel_stops_on_complete_trip(self):
+        """2,504 miles / 1,000 = at least 2 planned fuel stops."""
+        result = compute_plan(
+            total_miles=2504,
+            total_drive_minutes=58 * 60,
+            cycle_used_hours=0,
+            start_date=date(2025, 1, 1),
+        )
+        self.assertGreaterEqual(result["planned_fuel_stops"], 2)
+
+
+class CompletedTripFlagTest(TestCase):
+    """Short trips with enough cycle hours should be marked as completed."""
+
+    def test_short_trip_is_completed(self):
+        result = compute_plan(
+            total_miles=150,
+            total_drive_minutes=180,
+            cycle_used_hours=0,
+            start_date=date(2025, 1, 1),
+        )
+        self.assertTrue(result["trip_completed"])
+        self.assertEqual(result["remaining_drive_minutes"], 0)
+
+    def test_moderate_trip_with_enough_cycle(self):
+        result = compute_plan(
+            total_miles=400,
+            total_drive_minutes=8 * 60,
+            cycle_used_hours=20,
+            start_date=date(2025, 1, 1),
+        )
+        self.assertTrue(result["trip_completed"])
+        self.assertEqual(result["remaining_drive_minutes"], 0)

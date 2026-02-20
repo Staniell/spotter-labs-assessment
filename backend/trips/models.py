@@ -36,6 +36,9 @@ class TripPlan(models.Model):
     pickup_location_lng = models.FloatField(default=0)
     dropoff_location_lat = models.FloatField(default=0)
     dropoff_location_lng = models.FloatField(default=0)
+    trip_completed = models.BooleanField(default=True, help_text="Whether the driver can complete the full trip")
+    remaining_drive_minutes = models.IntegerField(default=0, help_text="Minutes of driving remaining if trip is incomplete")
+    planned_fuel_stops = models.IntegerField(default=0, help_text="Total fuel stops needed for the full route")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

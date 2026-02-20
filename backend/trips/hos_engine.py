@@ -174,6 +174,18 @@ def compute_plan(
         )
         state.global_minute += remaining
 
+    # ── Determine trip completion status ──────────────────────────────
+    actual_driven_minutes = sum(
+        e.end - e.start for e in state.timeline if e.status == Status.DRIVING
+    )
+    remaining_drive = max(0, total_drive_minutes - actual_driven_minutes)
+    trip_completed = remaining_drive <= 0
+
+    # ── Calculate planned fuel stops for the full route ───────────────
+    num_fuel_needed = max(0, int(total_miles / FUEL_INTERVAL_MILES))
+    actual_fuel_stops = sum(1 for s in state.stops if s.kind == StopKind.FUEL)
+    planned_fuel_stops = max(num_fuel_needed, actual_fuel_stops)
+
     # ── Build daily sheets from timeline ─────────────────────────────
     daily_sheets = _build_daily_sheets(state.timeline, start_date)
 
@@ -181,6 +193,9 @@ def compute_plan(
         "timeline": state.timeline,
         "stops": state.stops,
         "daily_sheets": daily_sheets,
+        "trip_completed": trip_completed,
+        "remaining_drive_minutes": remaining_drive,
+        "planned_fuel_stops": planned_fuel_stops,
     }
 
 

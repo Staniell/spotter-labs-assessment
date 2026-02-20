@@ -49,6 +49,9 @@ export interface TripPlan {
   pickup_location_lng: number;
   dropoff_location_lat: number;
   dropoff_location_lng: number;
+  trip_completed: boolean;
+  remaining_drive_minutes: number;
+  planned_fuel_stops: number;
   daily_sheets: DailySheet[];
   stops: Stop[];
   created_at: string;

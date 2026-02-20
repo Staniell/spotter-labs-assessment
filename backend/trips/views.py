@@ -167,6 +167,9 @@ def create_plan(request):
             pickup_location_lng=pickup_lng,
             dropoff_location_lat=dropoff_lat,
             dropoff_location_lng=dropoff_lng,
+            trip_completed=plan_result["trip_completed"],
+            remaining_drive_minutes=plan_result["remaining_drive_minutes"],
+            planned_fuel_stops=plan_result["planned_fuel_stops"],
         )
 
         # Persist stops

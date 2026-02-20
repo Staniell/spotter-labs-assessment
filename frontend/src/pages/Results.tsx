@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, CircularProgress, Grid, Typography } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DownloadIcon from "@mui/icons-material/Download";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { getPlan } from "../api/client";
 import type { TripPlan } from "../types";
 import RouteMap from "../components/RouteMap";
@@ -97,6 +98,32 @@ export default function Results() {
           Download Logs
         </Button>
       </Box>
+
+      {/* Incomplete trip warning */}
+      {plan.trip_completed === false && (
+        <Alert
+          severity="warning"
+          icon={<WarningAmberIcon />}
+          sx={{
+            mb: 3,
+            bgcolor: "rgba(255,152,0,0.06)",
+            border: "1px solid rgba(255,152,0,0.25)",
+            color: "#ffb74d",
+            borderRadius: 2,
+            "& .MuiAlert-icon": { color: "#ffb74d" },
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Driver has insufficient cycle hours to complete this trip.
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#ffd54f" }}>
+            Only {Math.floor((plan.total_drive_minutes - plan.remaining_drive_minutes) / 60)}h{" "}
+            {(plan.total_drive_minutes - plan.remaining_drive_minutes) % 60}m of the{" "}
+            {Math.floor(plan.total_drive_minutes / 60)}h {plan.total_drive_minutes % 60}m route could be driven.
+            Additional days required after cycle hours reset.
+          </Typography>
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         {/* Map */}

@@ -1,9 +1,10 @@
-import { Box, Card, CardContent, Chip, Divider, Typography } from "@mui/material";
+import { Alert, Box, Card, CardContent, Chip, Divider, Typography } from "@mui/material";
 import SpeedIcon from "@mui/icons-material/Speed";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import HotelIcon from "@mui/icons-material/Hotel";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import type { TripPlan } from "../types";
 
 interface Props {
@@ -11,10 +12,13 @@ interface Props {
 }
 
 export default function TripSummary({ plan }: Props) {
-  const fuelStops = plan.stops.filter((s) => s.kind === "FUEL").length;
+  const fuelStops = plan.planned_fuel_stops ?? plan.stops.filter((s) => s.kind === "FUEL").length;
   const restBreaks = plan.stops.filter((s) => s.kind === "BREAK_30" || s.kind === "OFF_DUTY_10").length;
   const hours = Math.floor(plan.total_drive_minutes / 60);
   const mins = plan.total_drive_minutes % 60;
+
+  const remainH = Math.floor((plan.remaining_drive_minutes ?? 0) / 60);
+  const remainM = (plan.remaining_drive_minutes ?? 0) % 60;
 
   const stats = [
     {
@@ -43,7 +47,7 @@ export default function TripSummary({ plan }: Props) {
     },
     {
       icon: <CalendarTodayIcon />,
-      label: "Days",
+      label: plan.trip_completed === false ? "Days (partial)" : "Days",
       value: String(plan.daily_sheets.length),
       color: "#2196F3",
     },
@@ -100,6 +104,31 @@ export default function TripSummary({ plan }: Props) {
             }}
           />
         </Box>
+
+        {/* Incomplete trip warning */}
+        {plan.trip_completed === false && (
+          <Alert
+            severity="warning"
+            icon={<WarningAmberIcon fontSize="small" />}
+            sx={{
+              mb: 2,
+              bgcolor: "rgba(255,152,0,0.08)",
+              border: "1px solid rgba(255,152,0,0.25)",
+              color: "#ffb74d",
+              "& .MuiAlert-icon": { color: "#ffb74d" },
+              borderRadius: 2,
+              py: 0.5,
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Trip Incomplete
+            </Typography>
+            <Typography variant="caption" sx={{ display: "block", color: "#ffd54f" }}>
+              Insufficient cycle hours. Remaining drive time: {remainH}h {remainM}m. Additional days required after
+              cycle hours reset.
+            </Typography>
+          </Alert>
+        )}
 
         <Divider sx={{ borderColor: "rgba(255,255,255,0.06)", my: 2 }} />
 
