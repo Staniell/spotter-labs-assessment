@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import type { TripPlan } from "../types";
 
 /**
@@ -13,50 +13,73 @@ export async function downloadAllSheets(plan: TripPlan): Promise<void> {
     return;
   }
 
+  const firstViewBox = svgElements[0].getAttribute("viewBox")?.split(" ") || ["0", "0", "1000", "720"];
+  const firstW = parseFloat(firstViewBox[2]);
+  const firstH = parseFloat(firstViewBox[3]);
+
+  // Use the dimensions from the first SVG for the initial PDF setup
   const pdf = new jsPDF({
-    orientation: "landscape",
+    orientation: firstW > firstH ? "landscape" : "portrait",
     unit: "px",
-    format: [1000, 720],
+    format: [firstW, firstH],
   });
 
   for (let i = 0; i < svgElements.length; i++) {
     const svg = svgElements[i] as SVGSVGElement;
 
-    // Serialize SVG to data URL
+    // Ensure the xmlns attribute is explicitly present before serialization
+    // This is sometimes missing in React/DOM nodes which breaks SVG in <img> tags
+    if (!svg.getAttribute("xmlns")) {
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    }
+
+    // Serialize SVG to data URL securely
     const serializer = new XMLSerializer();
-    const svgStr = serializer.serializeToString(svg);
-    const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+    let svgStr = serializer.serializeToString(svg);
 
     // Render SVG to canvas
+    const viewBox = svg.getAttribute("viewBox")?.split(" ") || ["0", "0", "1000", "720"];
+    const svgW = parseFloat(viewBox[2]);
+    const svgH = parseFloat(viewBox[3]);
+    const scale = 2; // For higher resolution
+    const canvasW = svgW * scale;
+    const canvasH = svgH * scale;
+
     const img = new Image();
-    img.width = 2000;
-    img.height = 1320;
+    img.width = canvasW;
+    img.height = canvasH;
 
     await new Promise<void>((resolve, reject) => {
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        canvas.width = 2000;
-        canvas.height = 1320;
+        canvas.width = canvasW;
+        canvas.height = canvasH;
         const ctx = canvas.getContext("2d")!;
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, 2000, 1320);
-        ctx.drawImage(img, 0, 0, 2000, 1320);
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
         const imgData = canvas.toDataURL("image/png");
 
         if (i > 0) {
-          pdf.addPage([1000, 660], "landscape");
+          pdf.addPage([svgW, svgH], svgW > svgH ? "landscape" : "portrait");
         }
-        pdf.addImage(imgData, "PNG", 0, 0, 1000, 660);
+        pdf.addImage(imgData, "PNG", 0, 0, svgW, svgH);
 
         URL.revokeObjectURL(url);
         resolve();
       };
-      img.onerror = reject;
-    });
+      img.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        console.error("Failed to load SVG into Image for PDF rendering:", e);
+        reject(new Error("Failed to load SVG into image for PDF generation. The SVG might be invalid."));
+      };
 
-    img.src = url;
+      // Set src after setting handlers
+      const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      img.src = url;
+    });
   }
 
   const date = plan.daily_sheets[0]?.date || "unknown";

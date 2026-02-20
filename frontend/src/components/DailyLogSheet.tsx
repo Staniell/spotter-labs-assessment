@@ -10,7 +10,6 @@ interface Props {
 
 // ── SVG layout constants ──────────────────────────────────────────
 const W = 1000;
-const H = 720;
 const GRID_LEFT = 140;
 const GRID_RIGHT = W - 60;
 const GRID_TOP = 175;
@@ -53,6 +52,10 @@ export default function DailyLogSheet({ sheet, plan }: Props) {
     totals[seg.status] += seg.end_minute - seg.start_minute;
   }
 
+  // Calculate dynamic height based on number of remarks
+  const displayRemarks = remarks.slice(0, 10);
+  const dynamicHeight = Math.max(450, gridBottom + 70 + displayRemarks.length * 16);
+
   return (
     <Box
       className="log-sheet-svg"
@@ -64,13 +67,13 @@ export default function DailyLogSheet({ sheet, plan }: Props) {
       }}
     >
       <svg
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 0 ${W} ${dynamicHeight}`}
         width="100%"
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: "block", fontFamily: "'Inter', Arial, sans-serif" }}
       >
         {/* ── Background ── */}
-        <rect width={W} height={H} fill="#ffffff" />
+        <rect width={W} height={dynamicHeight} fill="#ffffff" />
 
         {/* ── Title ── */}
         <text x={W / 2} y={30} textAnchor="middle" fontSize={20} fontWeight={700} fill="#111">
@@ -249,14 +252,14 @@ export default function DailyLogSheet({ sheet, plan }: Props) {
           Remarks
         </text>
         <line x1={50} y1={gridBottom + 36} x2={W - 50} y2={gridBottom + 36} stroke="#ddd" strokeWidth={0.5} />
-        {remarks.slice(0, 10).map((r, i) => (
+        {displayRemarks.map((r, i) => (
           <text key={i} x={55} y={gridBottom + 52 + i * 16} fontSize={10} fill="#555">
             {r}
           </text>
         ))}
 
         {/* ── Border ── */}
-        <rect x={1} y={1} width={W - 2} height={H - 2} fill="none" stroke="#ccc" strokeWidth={1} rx={4} />
+        <rect x={1} y={1} width={W - 2} height={dynamicHeight - 2} fill="none" stroke="#ccc" strokeWidth={1} rx={4} />
       </svg>
     </Box>
   );

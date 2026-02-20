@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Box, Button, CircularProgress, Grid, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Grid, Typography, Tabs, Tab } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DownloadIcon from "@mui/icons-material/Download";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { toast } from "sonner";
 import { getPlan } from "../api/client";
 import type { TripPlan } from "../types";
 import RouteMap from "../components/RouteMap";
@@ -17,6 +18,7 @@ export default function Results() {
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeSheetIdx, setActiveSheetIdx] = useState(0);
 
   useEffect(() => {
     if (!planId) return;
@@ -83,7 +85,16 @@ export default function Results() {
         <Button
           startIcon={<DownloadIcon />}
           variant="contained"
-          onClick={() => downloadAllSheets(plan)}
+          onClick={async () => {
+            try {
+              toast.loading("Generating PDF...", { id: "pdf-download" });
+              await downloadAllSheets(plan);
+              toast.success("PDF downloaded successfully!", { id: "pdf-download" });
+            } catch (err: any) {
+              console.error(err);
+              toast.error(err.message || "An error occurred while generating PDF.", { id: "pdf-download" });
+            }
+          }}
           sx={{
             background: "linear-gradient(135deg, #6366f1, #4f46e5)",
             fontWeight: 600,
@@ -156,9 +167,44 @@ export default function Results() {
             />
           </Box>
 
-          <Box sx={{ display: "grid", gap: 4 }}>
-            {plan.daily_sheets.map((sheet) => (
-              <Box key={sheet.id} id={`sheet-${sheet.id}`}>
+          {plan.daily_sheets.length > 1 && (
+            <Tabs
+              value={activeSheetIdx}
+              onChange={(_e, val) => setActiveSheetIdx(val)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                mb: 3,
+                minHeight: 48,
+                "& .MuiTab-root": {
+                  color: "#94a3b8",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  textTransform: "none",
+                  "&.Mui-selected": { color: "#fff" },
+                },
+                "& .MuiTabs-indicator": {
+                  backgroundColor: "#6C63FF",
+                  height: 3,
+                  borderRadius: "3px 3px 0 0",
+                },
+              }}
+            >
+              {plan.daily_sheets.map((sheet, i) => (
+                <Tab key={`tab-${sheet.id}`} label={`Day ${i + 1} (${sheet.date})`} />
+              ))}
+            </Tabs>
+          )}
+
+          <Box sx={{ position: "relative" }}>
+            {plan.daily_sheets.map((sheet, i) => (
+              <Box
+                key={sheet.id}
+                id={`sheet-${sheet.id}`}
+                sx={{
+                  display: activeSheetIdx === i ? "block" : "none",
+                }}
+              >
                 <DailyLogSheet sheet={sheet} plan={plan} />
               </Box>
             ))}
