@@ -351,3 +351,53 @@ class CompletedTripFlagTest(TestCase):
         )
         self.assertTrue(result["trip_completed"])
         self.assertEqual(result["remaining_drive_minutes"], 0)
+
+
+class DailyDrivingCapTest(TestCase):
+    """No daily sheet should ever show more than 11h (660 min) of driving."""
+
+    def _assert_daily_driving_capped(self, result):
+        """Helper: verify every sheet has <= DRIVE_LIMIT driving minutes."""
+        for sheet in result["daily_sheets"]:
+            driving_minutes = sum(
+                seg["end_minute"] - seg["start_minute"]
+                for seg in sheet.segments
+                if seg["status"] == Status.DRIVING.value
+            )
+            self.assertLessEqual(
+                driving_minutes,
+                DRIVE_LIMIT,
+                f"Sheet {sheet.date} has {driving_minutes} min driving "
+                f"(max {DRIVE_LIMIT})",
+            )
+
+    def test_user_scenario_daily_cap(self):
+        """Armstrong TX → Lyon KS → White AR, 987 mi, ~23h drive, 21h cycle."""
+        result = compute_plan(
+            total_miles=987,
+            total_drive_minutes=23 * 60 + 4,
+            cycle_used_hours=21,
+            start_date=date(2026, 2, 20),
+        )
+        self._assert_daily_driving_capped(result)
+
+    def test_long_haul_daily_cap(self):
+        """Multi-day cross-country trip stays within daily driving cap."""
+        result = compute_plan(
+            total_miles=2504,
+            total_drive_minutes=58 * 60 + 9,
+            cycle_used_hours=0,
+            start_date=date(2025, 6, 1),
+        )
+        self._assert_daily_driving_capped(result)
+
+    def test_medium_trip_daily_cap(self):
+        """13h driving with 0 cycle used — should respect daily cap."""
+        result = compute_plan(
+            total_miles=800,
+            total_drive_minutes=13 * 60,
+            cycle_used_hours=0,
+            start_date=date(2025, 1, 1),
+        )
+        self._assert_daily_driving_capped(result)
+

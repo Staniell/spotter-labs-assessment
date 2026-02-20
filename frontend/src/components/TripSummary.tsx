@@ -13,7 +13,8 @@ interface Props {
 
 export default function TripSummary({ plan }: Props) {
   const fuelStops = plan.planned_fuel_stops ?? plan.stops.filter((s) => s.kind === "FUEL").length;
-  const restBreaks = plan.stops.filter((s) => s.kind === "BREAK_30" || s.kind === "OFF_DUTY_10").length;
+  const restBreaks = plan.stops.filter((s) => s.kind === "BREAK_30").length;
+  const resets = plan.stops.filter((s) => s.kind === "OFF_DUTY_10").length;
   const hours = Math.floor(plan.total_drive_minutes / 60);
   const mins = plan.total_drive_minutes % 60;
 
@@ -44,6 +45,12 @@ export default function TripSummary({ plan }: Props) {
       label: "Rest Breaks",
       value: String(restBreaks),
       color: "#4CAF50",
+    },
+    {
+      icon: <HotelIcon />,
+      label: "Resets",
+      value: String(resets),
+      color: "#26A69A",
     },
     {
       icon: <CalendarTodayIcon />,

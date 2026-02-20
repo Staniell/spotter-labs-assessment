@@ -200,6 +200,36 @@ def compute_plan(
 
 
 # ── Internal helpers ─────────────────────────────────────────────────
+def _minutes_driven_in_current_day(state: DriverState) -> int:
+    """Sum driving minutes already in the current calendar day."""
+    day_start = (state.global_minute // MINUTES_IN_DAY) * MINUTES_IN_DAY
+    day_end = day_start + MINUTES_IN_DAY
+    total = 0
+    for evt in state.timeline:
+        if evt.status == Status.DRIVING:
+            overlap_start = max(evt.start, day_start)
+            overlap_end = min(evt.end, day_end)
+            if overlap_start < overlap_end:
+                total += overlap_end - overlap_start
+    return total
+
+
+def _pad_to_midnight(state: DriverState):
+    """Fill the rest of the current calendar day with Off Duty."""
+    day_minute = state.global_minute % MINUTES_IN_DAY
+    if day_minute > 0:
+        remaining = MINUTES_IN_DAY - day_minute
+        state.timeline.append(
+            TimelineEvent(
+                start=state.global_minute,
+                end=state.global_minute + remaining,
+                status=Status.OFF_DUTY,
+                label="Off Duty",
+            )
+        )
+        state.global_minute += remaining
+
+
 def _drive_leg(state: DriverState, miles: float, minutes: int, label: str):
     """Simulate driving a leg, inserting breaks / resets as needed."""
     remaining_miles = miles
@@ -212,7 +242,14 @@ def _drive_leg(state: DriverState, miles: float, minutes: int, label: str):
             # Cycle exhausted — cannot drive any more
             break
 
-        # ── Check if daily reset needed (14h window) ─────────────────
+        # ── Per-calendar-day 11h driving cap ─────────────────────────
+        daily_driven = _minutes_driven_in_current_day(state)
+        if daily_driven >= DRIVE_LIMIT:
+            _pad_to_midnight(state)
+            continue
+        daily_remaining = DRIVE_LIMIT - daily_driven
+
+        # ── Check if duty-period reset needed (14h window or 11h) ────
         window_remaining = max(0, WINDOW_LIMIT - state.on_duty_minutes)
         drive_remaining = max(0, DRIVE_LIMIT - state.drive_minutes)
 
@@ -236,6 +273,7 @@ def _drive_leg(state: DriverState, miles: float, minutes: int, label: str):
             drive_remaining,
             window_remaining,
             cycle_remaining,
+            daily_remaining,  # per-calendar-day cap
             BREAK_TRIGGER - state.cumulative_drive,  # until break needed
         )
 
