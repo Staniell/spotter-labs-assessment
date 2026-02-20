@@ -9,6 +9,13 @@ class PlanInputSerializer(serializers.Serializer):
     pickup_location = serializers.CharField(max_length=500)
     dropoff_location = serializers.CharField(max_length=500)
     cycle_used_hours = serializers.FloatField(min_value=0, max_value=70)
+    # Optional coordinates — when provided, skip geocoding
+    current_lat = serializers.FloatField(required=False, default=None)
+    current_lng = serializers.FloatField(required=False, default=None)
+    pickup_lat = serializers.FloatField(required=False, default=None)
+    pickup_lng = serializers.FloatField(required=False, default=None)
+    dropoff_lat = serializers.FloatField(required=False, default=None)
+    dropoff_lng = serializers.FloatField(required=False, default=None)
 
 
 # ---------- Read (nested) ----------

@@ -72,6 +72,12 @@ export interface PlanInput {
   pickup_location: string;
   dropoff_location: string;
   cycle_used_hours: number;
+  current_lat: number;
+  current_lng: number;
+  pickup_lat: number;
+  pickup_lng: number;
+  dropoff_lat: number;
+  dropoff_lng: number;
 }
 
 export type DutyStatus = "OFF_DUTY" | "SLEEPER" | "DRIVING" | "ON_DUTY_NOT_DRIVING";

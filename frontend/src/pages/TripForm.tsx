@@ -57,6 +57,12 @@ export default function TripForm() {
         pickup_location: pickup.name,
         dropoff_location: dropoff.name,
         cycle_used_hours: cycleHours,
+        current_lat: current.lat,
+        current_lng: current.lng,
+        pickup_lat: pickup.lat,
+        pickup_lng: pickup.lng,
+        dropoff_lat: dropoff.lat,
+        dropoff_lng: dropoff.lng,
       });
       navigate(`/results/${plan.id}`);
     } catch (err: unknown) {

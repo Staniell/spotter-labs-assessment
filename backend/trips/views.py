@@ -102,10 +102,21 @@ def create_plan(request):
     data = serializer.validated_data
 
     try:
-        # ── 1. Geocode all three locations ───────────────────────────
-        cur_lng, cur_lat = routing_client.geocode(data["current_location"])
-        pickup_lng, pickup_lat = routing_client.geocode(data["pickup_location"])
-        dropoff_lng, dropoff_lat = routing_client.geocode(data["dropoff_location"])
+        # ── 1. Use provided coordinates or fall back to geocoding ────
+        if data.get("current_lat") is not None and data.get("current_lng") is not None:
+            cur_lat, cur_lng = data["current_lat"], data["current_lng"]
+        else:
+            cur_lng, cur_lat = routing_client.geocode(data["current_location"])
+
+        if data.get("pickup_lat") is not None and data.get("pickup_lng") is not None:
+            pickup_lat, pickup_lng = data["pickup_lat"], data["pickup_lng"]
+        else:
+            pickup_lng, pickup_lat = routing_client.geocode(data["pickup_location"])
+
+        if data.get("dropoff_lat") is not None and data.get("dropoff_lng") is not None:
+            dropoff_lat, dropoff_lng = data["dropoff_lat"], data["dropoff_lng"]
+        else:
+            dropoff_lng, dropoff_lat = routing_client.geocode(data["dropoff_location"])
 
         # ── 2. Get driving directions (current → pickup → dropoff) ───
         waypoints = [
