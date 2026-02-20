@@ -1,0 +1,55 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+:root {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e2e8f0;
+  background-color: #0a0e1a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* MapLibre overrides */
+.maplibregl-popup-content {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-radius: 10px !important;
+  font-family: "Inter", sans-serif !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: #1e293b !important;
+}
+
+/* SVG log sheet print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .log-sheet-svg {
+    page-break-after: always;
+  }
+}
